@@ -10,6 +10,13 @@ import (
 )
 
 func main() {
+	var (
+		dbHost string
+		dbName string
+		dbPass string
+		dbPort string
+		dbUser string
+	)
 
 	app := cli.NewApp()
 	app.Version = "0.1.0"
@@ -21,13 +28,38 @@ func main() {
 			Email: "code@fraq.io",
 		},
 	}
+	app.Flags = []cli.Flag{
+		cli.StringFlag{
+			Name:        "dbUser",
+			Value:       "postgres",
+			Usage:       "Postgres user",
+			Destination: &dbUser,
+		},
+		cli.StringFlag{
+			Name:        "dbPass",
+			Usage:       "Postgres password",
+			Destination: &dbPass,
+		},
+		cli.StringFlag{
+			Name:        "dbName",
+			Value:       "postgres",
+			Usage:       "Postgres database name",
+			Destination: &dbName,
+		},
+		cli.StringFlag{
+			Name:        "dbPort",
+			Value:       "5432",
+			Usage:       "Postgres port",
+			Destination: &dbPort,
+		},
+	}
 	app.Action = func(c *cli.Context) error {
 		var s *praypi.Server
-		s.Run()
+		s.Run(dbUser, dbPass, dbName, dbPort)
 		waitForCtrlC()
 		return nil
 	}
-
+	sort.Sort(cli.FlagsByName(app.Flags))
 	app.Run(os.Args)
 }
 

@@ -2,11 +2,14 @@
 package praypi
 
 import (
+	"database/sql"
 	"github.com/gin-gonic/gin"
 	"github.com/satori/go.uuid"
+	"log"
 )
 
 type Server struct {
+	db *sql.DB
 }
 
 type Request struct {
@@ -17,7 +20,13 @@ type Request struct {
 	Content   string    `json:"content"`
 }
 
-func (s *Server) Run() {
+func (s *Server) Run(dbUser string, dbPass string, dbName string, dbPort string) {
+	db := dbConnect(dbUser, dbPass, dbName, dbPort)
+	err := dbInit(db)
+	if err != nil {
+		log.Fatal(err)
+	}
+
 	r := gin.Default()
 	r.GET("/", func(c *gin.Context) {
 		c.String(200, "Welcome to PrayPI, the API for prayer requests.\n")
