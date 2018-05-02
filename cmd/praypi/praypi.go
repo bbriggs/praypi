@@ -5,6 +5,7 @@ import (
 	"github.com/urfave/cli"
 	"os"
 	"os/signal"
+	"sort"
 	"sync"
 	"time"
 )
@@ -47,6 +48,12 @@ func main() {
 			Destination: &dbName,
 		},
 		cli.StringFlag{
+			Name: "dbHost",
+			Value: "127.0.0.1",
+			Usage: "Hostname or IP address of Postgres instance",
+			Destination: &dbHost,
+		},
+		cli.StringFlag{
 			Name:        "dbPort",
 			Value:       "5432",
 			Usage:       "Postgres port",
@@ -54,8 +61,8 @@ func main() {
 		},
 	}
 	app.Action = func(c *cli.Context) error {
-		var s *praypi.Server
-		s.Run(dbUser, dbPass, dbName, dbPort)
+		s := praypi.NewServer(dbUser, dbPass, dbName, dbHost, dbPort)
+		s.Run()
 		waitForCtrlC()
 		return nil
 	}

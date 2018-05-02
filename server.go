@@ -1,15 +1,17 @@
-// Package server implements the server side of VFT-'s client-server interaction
 package praypi
 
 import (
-	"database/sql"
+	"fmt"
 	"github.com/gin-gonic/gin"
+	"github.com/jinzhu/gorm"
+	_ "github.com/jinzhu/gorm/dialects/postgres"
 	"github.com/satori/go.uuid"
-	"log"
+	"github.com/sirupsen/logrus"
 )
 
 type Server struct {
-	db *sql.DB
+	db  *gorm.DB
+	log *logrus.Entry
 }
 
 type Request struct {
@@ -20,13 +22,16 @@ type Request struct {
 	Content   string    `json:"content"`
 }
 
-func (s *Server) Run(dbUser string, dbPass string, dbName string, dbPort string) {
-	db := dbConnect(dbUser, dbPass, dbName, dbPort)
-	err := dbInit(db)
-	if err != nil {
-		log.Fatal(err)
+func NewServer(dbUser string, dbPass string, dbName string, dbHost string, dbPort string) *Server {
+	db := dbConnect(dbUser, dbPass, dbName, dbHost, dbPort)
+	var s = &Server{
+		log: logrus.WithField("context", "praypi"),
+		db:  db,
 	}
+	return s
+}
 
+func (s *Server) Run() {
 	r := gin.Default()
 	r.GET("/", func(c *gin.Context) {
 		c.String(200, "Welcome to PrayPI, the API for prayer requests.\n")
@@ -40,15 +45,9 @@ func (s *Server) Run(dbUser string, dbPass string, dbName string, dbPort string)
 func (s *Server) postRequests(c *gin.Context) {
 	var json Request
 	if err := c.ShouldBindJSON(&json); err == nil {
-		if isValidPrayer(json) {
-			c.JSON(200, gin.H{
-				"message": "Your prayer has been heard!",
-				"id":      uuid.Must(uuid.NewV4()),
-			})
-		} else if json.Lang == "angelic" {
-			c.JSON(301, gin.H{
-				"message": "Moved permanently",
-			})
+		if s.isValidPrayer(json) {
+			code, resp := s.parsePrayer(json)
+			c.JSON(code, resp)
 		} else {
 			c.JSON(400, gin.H{
 				"error": "Malformed prayer.",
@@ -61,6 +60,19 @@ func (s *Server) postRequests(c *gin.Context) {
 	}
 }
 
+func (s *Server) parsePrayer(r Request) (int, gin.H) {
+	id, err := s.insertPrayer(r)
+	if err != nil {
+		return 500, gin.H{"error": "Unable to handle prayers right now. Pray again later."}
+	}
+
+	resp := gin.H{
+		"id":      id,
+		"message": "Your prayer has been heard!",
+	}
+	return 200, resp
+}
+
 func (s *Server) getRequests(c *gin.Context) {
 	c.JSON(501, gin.H{
 		"error": "Not implemented yet. Come back later.",
@@ -68,12 +80,17 @@ func (s *Server) getRequests(c *gin.Context) {
 }
 
 func (s *Server) getRequestsId(c *gin.Context) {
-	c.JSON(501, gin.H{
-		"error": "Not implemented yet. Come back later.",
-	})
+	id := c.Param("id")
+	resp, err := s.queryPrayer(id)
+	if err != nil {
+		c.JSON(200, gin.H{"error": "Prayer not found."})
+	} else {
+		c.JSON(200, resp)
+	}
 }
 
-func isValidPrayer(r Request) bool {
+func (s *Server) isValidPrayer(r Request) bool {
+	fmt.Println(r)
 	if isValidPrayerType(r.Type) && isValidLanguage(r.Lang) && len(r.Content) > 0 {
 		return true
 	} else {
@@ -90,13 +107,16 @@ func isValidPrayerType(t string) bool {
 		"supplication",
 		"imprecation",
 		"unspoken":
+		fmt.Println("Valid type")
 		return true
 	}
 	return false
 }
 
 func isValidLanguage(t string) bool {
+	fmt.Println(t)
 	if t == "human" {
+		fmt.Println("Valid language")
 		return true
 	} else {
 		return false
