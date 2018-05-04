@@ -22,16 +22,6 @@ type Request struct {
 	Content   string    `json:"content"`
 }
 
-/*
-type Response struct {
-	Id string `json:"id"`
-	Type string `json:"type,omitempty"`
-	Lang string `json:"lang,omitempty"`
-	Fulfilled bool `json:"fulfilled,omitempty"`
-	Content string `json:"fulfilled,omitempty"`
-}
-*/
-
 func NewServer(dbUser string, dbPass string, dbName string, dbHost string, dbPort string) *Server {
 	db := dbConnect(dbUser, dbPass, dbName, dbHost, dbPort)
 	var s = &Server{
