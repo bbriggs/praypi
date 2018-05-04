@@ -22,6 +22,16 @@ type Request struct {
 	Content   string    `json:"content"`
 }
 
+/*
+type Response struct {
+	Id string `json:"id"`
+	Type string `json:"type,omitempty"`
+	Lang string `json:"lang,omitempty"`
+	Fulfilled bool `json:"fulfilled,omitempty"`
+	Content string `json:"fulfilled,omitempty"`
+}
+*/
+
 func NewServer(dbUser string, dbPass string, dbName string, dbHost string, dbPort string) *Server {
 	db := dbConnect(dbUser, dbPass, dbName, dbHost, dbPort)
 	var s = &Server{
@@ -74,9 +84,13 @@ func (s *Server) parsePrayer(r Request) (int, gin.H) {
 }
 
 func (s *Server) getRequests(c *gin.Context) {
-	c.JSON(501, gin.H{
-		"error": "Not implemented yet. Come back later.",
-	})
+	prayers, err := s.getAllPrayers()
+	if err != nil {
+		c.JSON(200, gin.H{
+			"error": err})
+	} else {
+		c.JSON(200, prayers)
+	}
 }
 
 func (s *Server) getRequestsId(c *gin.Context) {

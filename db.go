@@ -10,12 +10,12 @@ import (
 )
 
 type Prayer struct {
-	gorm.Model
-	PrayerID  uuid.UUID `gorm:unique;not_null`
-	Type      string    `gorm:not_null`
-	Language  string    `gorm:not_null`
-	Fulfilled bool      `gorm:not_null`
-	Content   string    `gorm:not_null`
+	ID        int       `gorm:"primary_key" json:"-"`
+	PrayerID  uuid.UUID `gorm:"unique;not_null" json:"id"`
+	Type      string    `gorm:"not_null" json:"type"`
+	Language  string    `gorm:"not_null" json:"lang"`
+	Fulfilled bool      `gorm:"not_null" json:"fulfilled"`
+	Content   string    `gorm:"not_null" json:"content"`
 }
 
 func dbConnect(user string, pass string, dbname string, host string, port string) *gorm.DB {
@@ -63,4 +63,13 @@ func (s *Server) queryPrayer(id string) (gin.H, error) {
 		"content":   p.Content,
 	}
 	return resp, nil
+}
+
+func (s *Server) getAllPrayers() (gin.H, error) {
+	var prayers []Prayer
+	rows := s.db.Select("prayer_id, content, language, type, fulfilled").Find(&prayers)
+	if rows.Error != nil {
+		return gin.H{"error": "Database error"}, rows.Error
+	}
+	return gin.H{"prayers": prayers}, rows.Error
 }
