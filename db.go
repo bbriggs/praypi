@@ -22,7 +22,7 @@ func dbConnect(user string, pass string, dbname string, host string, port string
 	connStr := fmt.Sprintf("user=%s dbname=%s password=%s host=%s port=%s sslmode=disable", user, dbname, pass, host, port)
 	db, err := gorm.Open("postgres", connStr)
 	if err != nil {
-		fmt.Println("Unable to connecto to database")
+		fmt.Println("Unable to connect to to database")
 		fmt.Println(err)
 		os.Exit(1)
 	}
